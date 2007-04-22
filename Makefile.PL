@@ -5,6 +5,10 @@ WriteMakefile(
     NAME         => 'Youri::BTS',
     VERSION_FROM => 'lib/Youri/BTS/Bugzilla.pm',
     AUTHOR       => 'Youri project <youri@zarb.org>',
+    PREREQ_PM  => {
+        'version' => 0,
+    }
+
 );
 
 sub MY::postamble {

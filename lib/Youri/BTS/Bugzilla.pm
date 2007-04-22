@@ -1,4 +1,4 @@
-# $Id: /mirror/youri/soft/BTS/trunk/lib/Youri/BTS/Bugzilla.pm 2229 2007-03-05T21:17:33.759792Z guillomovitch  $
+# $Id: /mirror/youri/soft/BTS/trunk/lib/Youri/BTS/Bugzilla.pm 2347 2007-04-10T14:55:21.041566Z guillomovitch  $
 package Youri::BTS::Bugzilla;
 
 =head1 NAME
@@ -41,16 +41,17 @@ package maintainer
 use Carp;
 use strict;
 use warnings;
-use version; our $VERSION = qv('0.1.0');
+use version; our $VERSION = qv('0.1.1');
 
 my %queries = (
     get_package_id    => 'SELECT id FROM products WHERE name = ?',
     get_maintainer_id => 'SELECT userid FROM profiles WHERE login_name = ?',
     get_versions      => 'SELECT value FROM versions WHERE product_id = ?',
     get_components    => 'SELECT name FROM components WHERE product_id = ?',
-    add_package       => 'INSERT INTO products (name, description) VALUES (?, ?)',
+    add_package       => 'INSERT INTO products (name, description, defaultmilestone) VALUES (?, ?, ?)',
     add_component     => 'INSERT INTO components (product_id, name, description,initialowner, initialqacontact) VALUES (?, ?, ?, ?, ?)',
     add_version       => 'INSERT INTO versions (product_id, value) VALUES (?, ?)',
+    add_milestone     => 'INSERT INTO milestones (product_id, value) VALUES (?, ?)',
     del_package       => 'DELETE FROM products WHERE product = ?',
     del_maintainer    => 'DELETE FROM profiles WHERE login_name = ?',
     del_components    => 'DELETE FROM components WHERE program = ?',
@@ -272,17 +273,20 @@ sub add_package {
         return;
     }
 
+    my $milestone = '---';
+
     my $query = $self->{_queries}->{add_package};
     unless ($query) {
         $query = $self->{_dbh}->prepare($queries{add_package});
         $self->{_queries}->{add_package} = $query;
     }
 
-    $query->execute($name, $summary);
+    $query->execute($name, $summary, $milestone);
 
     my $package_id  = $self->_get_package_id($name);
 
     $self->_add_version($package_id, $version);
+    $self->_add_milestone($package_id, $milestone);
     $self->_add_component(
         $package_id,
         'package',
@@ -323,6 +327,18 @@ sub _add_version {
     }
 
     $query->execute($package_id, $version);
+}
+
+sub _add_milestone {
+    my ($self, $package_id, $milestone) = @_;
+
+    my $query = $self->{_queries}->{add_milestone};
+    unless ($query) {
+        $query = $self->{_dbh}->prepare($queries{add_milestone});
+        $self->{_queries}->{add_milestone} = $query;
+    }
+
+    $query->execute($package_id, $milestone);
 }
 
 
